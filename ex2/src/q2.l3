@@ -1,12 +1,12 @@
 (define make-ok
   (lambda (val)
-    @TODO
+    (cons "Ok" val)
   )
  )
  
 (define make-error
   (lambda (msg)
-    @TODO
+    (cons "Failure" msg)
   )
  )
 
