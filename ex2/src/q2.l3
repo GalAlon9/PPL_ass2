@@ -12,32 +12,38 @@
 
 (define ok?
   (lambda (res)
-    (eq? (car res) "Ok")
+    (and (pair? res)
+      (eq? (car res) "Ok"))
   )
  )
-
-
 (define error?
   (lambda (res)
-    @TODO
+    (and (pair? res)
+      (eq? (car res) "Failure"))
   )
  )
 
 (define result?
   (lambda (res)
-    @TODO
+    (and(pair? res)
+    (or(ok? res)
+       (error? res))
+    )
   )
  )
 
 (define result->val
   (lambda (res)
-    @TODO
+    (cdr res)
   )
 )
 
 (define bind 
   (lambda (f)
-    @TODO
+    (lambda (res)
+      (if(ok? res)
+         (f (cdr res))
+         (make-error (cdr res))))
   )
 )
 
