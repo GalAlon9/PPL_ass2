@@ -1,6 +1,6 @@
 (define make-ok
   (lambda (val)
-    (cons "Ok" val)
+    (cons "Ok"  val)
   )
  )
  
@@ -12,9 +12,10 @@
 
 (define ok?
   (lambda (res)
-    @TODO
+    (eq? (car res) "Ok")
   )
  )
+
 
 (define error?
   (lambda (res)
