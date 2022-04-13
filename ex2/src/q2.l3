@@ -49,15 +49,17 @@
 
 (define make-dict
   (lambda ()
-    @TODO
+    (list)
   )
 )
 
 (define dict?
   (lambda (e)
-    @TODO
+    (or (empty? e)
+         (and (pair? (car e))
+              (dict? (cdr e)))
   )
-)
+))
 
 (define get
   (lambda (dict k)
