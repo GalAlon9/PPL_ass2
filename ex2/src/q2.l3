@@ -78,17 +78,41 @@
   (lambda (dict k v)
     (if (dict? dict)
     (if (empty? dict)
-        (make-ok (list (cons k v)))
+        (make-ok  (list (cons k v)) )
         (if (eq? (car (car dict)) k)
-            (make-ok (cons (cons k v) (cdr dict)))
-            (cons (car dict) (put (cdr dict k v)))))
+            (make-ok (list (cons k v) (cdr dict)))
+            (make-ok(cons (car dict) (put1 (cdr dict) k v)))))
     (make-error "Error: not a dictionary"))
+  )
+)
+
+(define put1
+  (lambda (dict k v)
+    (if (empty? dict)
+        (list (cons k v))
+        (if (eq? (car (car dict)) k)
+            (list (cons k v) (cdr dict))
+            (cons (car dict) (put1 (cdr dict) k v))))
   )
 )
 
 (define map-dict
   (lambda (dict f)
-    @TODO
+    (if (dict? dict)
+    (if (empty? dict)
+       (make-ok dict)
+            (make-ok (cons (cons (car (car dict))  (f (cdr(car dict)))) (map-dict1 (cdr dict) f))))
+    (make-error "Error: not a dictionary"))
+  )
+)
+
+(define map-dict1
+  (lambda (dict f)
+    (if (dict? dict)
+    (if (empty? dict)
+        dict
+            (cons (cons (car (car dict))  (f (cdr(car dict)))) (map-dict1 (cdr dict) f)))
+    (make-error "Error: not a dictionary"))
   )
 )
 
