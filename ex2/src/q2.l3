@@ -12,14 +12,19 @@
 
 (define ok?
   (lambda (res)
-    (and (pair? res)
-      (eq? (car res) "Ok"))
+    (if (pair? res)
+      (eq? (car res) "Ok")
+      #f  
+    )
   )
  )
 (define error?
   (lambda (res)
-    (and (pair? res)
-      (eq? (car res) "Failure"))
+    (if (pair? res)
+      (eq? (car res) "Failure")
+      #f
+      )
+
   )
  )
 
@@ -55,9 +60,15 @@
 
 (define dict?
   (lambda (e)
-    (or (empty? e)
-         (and (pair? (car e))
-              (dict? (cdr e)))
+    (if (empty? e)
+        #t
+       (if (pair? e)
+          (if (pair? (car e))
+              (dict? (cdr e))
+              #f
+          )
+          #f  
+        )
   )
 ))
 
@@ -65,7 +76,7 @@
   (lambda (dict k)
     (if (dict? dict)
          (if (empty? dict)
-             (make-error "key not found")
+             (make-error "Key not found")
              (if (eq? (car (car dict)) k)
                  (make-ok (cdr (car dict)))
                  (get (cdr dict) k)))
@@ -77,22 +88,30 @@
 (define put
   (lambda (dict k v)
     (if (dict? dict)
-    (if (empty? dict)
-        (make-ok  (list (cons k v)) )
-        (if (eq? (car (car dict)) k)
-            (make-ok (list (cons k v) (cdr dict)))
-            (make-ok(cons (car dict) (put1 (cdr dict) k v)))))
-    (make-error "Error: not a dictionary"))
+        (if (empty? dict)
+            (make-ok  (list (cons k v)) )
+            (if (eq? (car (car dict)) k)
+                (if (empty? (cdr dict))
+                    (make-ok (list (cons k v)))
+                    (make-ok (list (cons k v) (cdr dict))))
+                (make-ok(cons (car dict) (put1 (cdr dict) k v))))
+        )
+        (make-error "Error: not a dictionary")
+        )
   )
 )
 
 (define put1
   (lambda (dict k v)
-    (if (empty? dict)
-        (list (cons k v))
-        (if (eq? (car (car dict)) k)
-            (list (cons k v) (cdr dict))
-            (cons (car dict) (put1 (cdr dict) k v))))
+    
+        (if (empty? dict)
+            (list (cons k v))
+            (if (eq? (car (car dict)) k)
+                (if (empty? (cdr dict))
+                    (list (cons k v))
+                    (list (cons k v) (cdr dict)))
+                (cons (car dict) (put1 (cdr dict) k v)))
+        )
   )
 )
 
