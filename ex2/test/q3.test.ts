@@ -23,8 +23,8 @@ describe('Q3 Tests', () => {
           expect(bind(bind(bind(p(`(let* ((a 1) (b (+ a 2))) (* a b))`), parseL31Exp), L31ToL3),  x=>makeOk(unparseL31(x)))).to.deep.equal(makeOk(`(let ((a 1)) (let ((b (+ a 2))) (* a b)))`));
      });
 
-    //  it('trnasform let* program in to let', () => {
-    //       expect(bind(bind(parseL31(`(L31 (define a 1) (if (> a 3) (let ((a 1) (b a)) (* a b)) (let* ((a 1) (b a)) (* a b))))`), L31ToL3),  x=>makeOk(unparseL31(x)))).to.deep.equal(makeOk(`(L31 (define a 1) (if (> a 3) (let ((a 1) (b a)) (* a b)) (let ((a 1)) (let ((b a)) (* a b)))))`));
-    //  });
+     it('trnasform let* program in to let', () => {
+          expect(bind(bind(parseL31(`(L31 (define a 1) (if (> a 3) (let ((a 1) (b a)) (* a b)) (let* ((a 1) (b a)) (* a b))))`), L31ToL3),  x=>makeOk(unparseL31(x)))).to.deep.equal(makeOk(`(L31 (define a 1) (if (> a 3) (let ((a 1) (b a)) (* a b)) (let ((a 1)) (let ((b a)) (* a b)))))`));
+     });
      
 });
