@@ -24,11 +24,6 @@ export const ProcExptoJS = (pe: ProcExp): Result<string> =>
     bind(L30tojsExp(pe.body[0]), body => makeOk("(" + "(" +
         map((p) => p.var, pe.args).join(",") + ")" + " => " + body + ")"));
 
-// export const LetExptoJS = (le: LetExp) : string => 
-//         `(let (${map((b: Binding) => `(${b.var.var} ${L30tojsExp(b.val)})`, le.bindings).join(" ")}) ${unparseLExps(le.body)})`
-
-// export const LetPlusExptoJS = (le: LetPlusExp) : string => 
-//         `(let* (${map((b: Binding) => `(${b.var.var} ${L30tojsExp(b.val)})`, le.bindings).join(" ")}) ${unparseLExps(le.body)})`
 
 export const L30tojsExp = (exp: Program | Exp): Result<string> =>
     isProgram(exp) ? bind(mapResult(L30tojsExp, exp.exps), exps => makeOk(exps.join(";\n"))) :
