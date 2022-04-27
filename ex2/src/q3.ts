@@ -10,8 +10,6 @@ import { makeBox } from "../shared/box";
 export const rewriteLetPlusCExp = (e: LetPlusExp): Result<CExp> => {
     const vars = map((b) => b.var, e.bindings);
     const vals = map((b) => b.val, e.bindings);
-    //if binding == 1 --> return makelet
-    // makeLetExp(binding[0], rewrite(makeletplus(slice(binding), body)))
     const exp = rewriteLetPlus(e);
     return safe2((bindings: CExp[], body: CExp[]) => makeOk(makeLetExp(zipWith(makeBinding,map(binding => binding.var.var, exp.bindings),bindings),body)))
                             (mapResult((binding : Binding ) => rewriteAllLetPlusCExp(binding.val), exp.bindings),
@@ -47,10 +45,7 @@ const rewriteAllLetPlusCExp = (exp: CExp): Result<CExp>=>
     isPrimOp(exp) ? makeOk(exp) :
     isVarRef(exp) ? makeOk(exp) :
     isLitExp(exp) ? makeOk(exp) :
-    isIfExp(exp) ? three_binds((test: CExp, then: CExp, alt: CExp) => makeOk( makeIfExp(test,then,alt)))
-                             (rewriteAllLetPlusCExp(exp.test),
-                             rewriteAllLetPlusCExp(exp.then),
-                             rewriteAllLetPlusCExp(exp.alt)):
+    isIfExp(exp) ? bind(rewriteAllLetPlusCExp(exp.test), test => (bind(rewriteAllLetPlusCExp(exp.then), then => bind(rewriteAllLetPlusCExp(exp.alt), alt => makeOk( makeIfExp(test,then,alt)))))) :
     isAppExp(exp) ? safe2((rator: CExp, rands: CExp[])=> makeOk(makeAppExp(exp.rator,exp.rands)))
                             (rewriteAllLetPlusCExp(exp.rator), mapResult(rewriteAllLetPlusCExp, exp.rands)):                      
     isProcExp(exp) ? bind(mapResult(rewriteAllLetPlusCExp, exp.body), (body: CExp[]) => makeOk(makeProcExp(exp.args,body))):
@@ -59,13 +54,6 @@ const rewriteAllLetPlusCExp = (exp: CExp): Result<CExp>=>
                             mapResult(rewriteAllLetPlusCExp, exp.body)):
     isLetPlusExp(exp) ? rewriteLetPlusCExp(exp) :
      makeFailure("error");
-
-
-
-
-export const three_binds = <T1, T2, T3, T4>(f: (x: T1, y: T2, z: T3) => Result<T4>): (a: Result<T1>, b: Result<T2>, c: Result<T3>) => Result<T4> =>
-    (a: Result<T1>, b: Result<T2>, c: Result<T3>) =>
-        bind(a, (x: T1) => bind(b, (y: T2) => bind(c, (z: T3) => f(x, y, z))));
 
 
 

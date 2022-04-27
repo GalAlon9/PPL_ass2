@@ -20,52 +20,56 @@ export const l30ToJS = (exp: Exp | Program): Result<string> =>
 
 
 
-export const ProcExptoJS = (pe: ProcExp): Result<string> =>
-    bind(L30tojsExp(pe.body[0]), body => makeOk("(" + "(" +
-        map((p) => p.var, pe.args).join(",") + ")" + " => " + body + ")"));
+// export const ProcExptoJS = (pe: ProcExp): Result<string> =>
+//     bind(L30tojsExp(pe.body[0]), body => makeOk("(" + "(" +
+//         map((p) => p.var, pe.args).join(",") + ")" + " => " + body + ")"));
 
 
 export const L30tojsExp = (exp: Program | Exp): Result<string> =>
-    isProgram(exp) ? bind(mapResult(L30tojsExp, exp.exps), exps => makeOk(exps.join(";\n"))) :
-        isBoolExp(exp) ? makeOk(exp.val ? 'True' : 'False') :
-            isNumExp(exp) ? makeOk(exp.val.toString()) :
-                isStrExp(exp) ? makeOk(`\"${exp.val}\"`) :
-                    isLitExp(exp) ? makeOk(`Symbol.for(\"${valueToString(exp.val)}\")`) :
-                        isVarRef(exp) ? makeOk(exp.var) :
-                            isDefineExp(exp) ? bind(L30tojsExp(exp.val), val => makeOk(`const ${exp.var.var} = ${val}`)) :
-                                isProcExp(exp) ? ProcExptoJS(exp) : // lambda (a b c d) (* (+ a b) (- c d)) --> (c - d) * (a + b)
-                                    isIfExp(exp) ? three_binds((test: string, then: string, alt: string) => makeOk(`(${test} ? ${then} : ${alt})`))
-                                        (l30ToJS(exp.test), l30ToJS(exp.then), l30ToJS(exp.alt)) :
-                                        isPrimOp(exp) ? makeOk(Optojs(exp.op)) :
-                                            isAppExp(exp) ? (
-                                                isPrimOp(exp.rator) ? Optojscomplicated(exp.rator, exp.rands) :
-                                                    safe2((rator: string, rands: string[]) => makeOk(`${rator}(${rands.join(",")})`))
-                                                        (L30tojsExp(exp.rator), mapResult(L30tojsExp, exp.rands))
-                                            ) :
-                                                isLetExp(exp) ? L30tojsExp(rewriteLet(exp)) :
-                                                    makeFailure("fail");
+    isProgram(exp) ? bind(mapResult(L30tojsExp, exp.exps), (exps: string[]) => makeOk(exps.join(";\n"))) :
+    isBoolExp(exp) ? makeOk(exp.val ? 'True' : 'False') :
+    isNumExp(exp) ? makeOk(exp.val.toString()) :
+    isStrExp(exp) ? makeOk(`\"${exp.val}\"`) :
+    isLitExp(exp) ? makeOk(`Symbol.for(\"${valueToString(exp.val)}\")`) :
+    isVarRef(exp) ? makeOk(exp.var) :
+    isDefineExp(exp) ? bind(L30tojsExp(exp.val), val => makeOk(`const ${exp.var.var} = ${val}`)) :
+    isProcExp(exp) ? bind(mapResult(L30tojsExp, exp.body), body => makeOk("(" + "(" +
+                            map((p) => p.var, exp.args).join(",") + ")" + " => " + body + ")")) :
+    isIfExp(exp) ? bind(l30ToJS(exp.test), test => (bind(l30ToJS(exp.then), then => bind(l30ToJS(exp.alt), alt => makeOk(`(${test} ? ${then} : ${alt})`) )))) :
+    isPrimOp(exp) ? makeOk(Optojs(exp.op)) :
+    isAppExp(exp) ? (
+                    isPrimOp(exp.rator) ? Optojscomplicated(exp.rator, exp.rands) :
+                    safe2((rator: string, rands: string[]) => makeOk(`${rator}(${rands.join(",")})`))
+                            (L30tojsExp(exp.rator), mapResult(L30tojsExp, exp.rands))
+                    ) :
+    isLetExp(exp) ? L30tojsExp(rewriteLet(exp)) :
+    makeFailure("fail");
 
 export const Optojs = (rator: string): string =>
+    rator === "number?" ? "((x) => (typeof (x) === number))" :
+    rator === "boolean?" ? "((x) => (typeof(x) === boolean))" :
+    rator === "symbol?" ? "((x) => (typeof (x) === symbol))" :
+    rator === "string?" ? "((x) => (typeof(x) === string))" :
     rator === "=" || rator === "eq?" ? "===" :
-        rator === "number?" ? "((x) => (typeof (x) === number))" :
-            rator === "boolean?" ? "((x) => (typeof(x) === boolean))" :
-                rator === "symbol?" ? "((x) => (typeof (x) === symbol))" :
-                    rator === "string?" ? "((x) => (typeof(x) === string))" :
-                        rator;
+    rator === "and" ? "&&" :
+    rator === "or" ? "||" :
+    rator;
+
+export const logicOptojs = (rator : string): string => 
+    rator === "and" ? "&&" :
+    rator === "or" ? "||" :
+    rator;
 
 export const Optojscomplicated = (rator: PrimOp, rands: CExp[]): Result<string> =>
     rator.op === "number?" || rator.op === "boolean?" || rator.op === "symbol?" || rator.op === "string?" ? bind(L30tojsExp(rands[0]), (rand: string) => makeOk(`${Optojs(rator.op)}(${rand})`)) :
-        rator.op === "not" ? bind(L30tojsExp(rands[0]), (rand: string) => makeOk("(!" + rand + ")")) :
-            rator.op === "'" ? bind(L30tojsExp(rands[0]), (rand: string) => makeOk(`(\"${rand}\")`)) :
-                rator.op === "string=?" ? bind(mapResult(l30ToJS, rands), (rands: string[]) => makeOk(`(${rands[0]} === ${rands[1]})`)) :
+    rator.op === "not" ? bind(L30tojsExp(rands[0]), (rand: string) => makeOk("(!" + rand + ")")) :
+    rator.op === "and" || rator.op === "or" ? bind(mapResult(l30ToJS, rands), (rand: string[]) => makeOk("(" + rand[0] + logicOptojs(rator.op) + rand[1] + ")")) :
+    rator.op === "'" ? bind(L30tojsExp(rands[0]), (rand: string) => makeOk(`(\"${rand}\")`)) :
+    rator.op === "string=?" ? bind(mapResult(l30ToJS, rands), (rands: string[]) => makeOk(`(${rands[0]} === ${rands[1]})`)) :
                     bind(mapResult(L30tojsExp, rands), (rands) => makeOk("(" + rands.join(" " + Optojs(rator.op) + " ") + ")"));
 
 
-export const three_binds = <T1, T2, T3, T4>(f: (x: T1, y: T2, z: T3) => Result<T4>): (a: Result<T1>, b: Result<T2>, c: Result<T3>) => Result<T4> =>
-    (a: Result<T1>, b: Result<T2>, c: Result<T3>) =>
-        bind(a, (x: T1) => bind(b, (y: T2) => bind(c, (z: T3) => f(x, y, z))));
-
-const rewriteLet = (e: LetExp): AppExp => {
+export const rewriteLet = (e: LetExp): AppExp => {
     const vars = map((b) => b.var, e.bindings);
     const vals = map((b) => b.val, e.bindings);
     return makeAppExp(
@@ -83,12 +87,12 @@ export const rewriteAllLet = (exp: Program | Exp): Program | Exp =>
         isProgram(exp) ? makeProgram(map(rewriteAllLetExp, exp.exps)) :
             exp;
 
-const rewriteAllLetExp = (exp: Exp): Exp =>
+export const rewriteAllLetExp = (exp: Exp): Exp =>
     isCExp(exp) ? rewriteAllLetCExp(exp) :
         isDefineExp(exp) ? makeDefineExp(exp.var, rewriteAllLetCExp(exp.val)) :
             exp;
 
-const rewriteAllLetCExp = (exp: CExp): CExp =>
+export const rewriteAllLetCExp = (exp: CExp): CExp =>
     isAtomicExp(exp) ? exp :
         isLitExp(exp) ? exp :
             isIfExp(exp) ? makeIfExp(rewriteAllLetCExp(exp.test),
